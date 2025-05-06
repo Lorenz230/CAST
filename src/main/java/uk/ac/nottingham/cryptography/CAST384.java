@@ -15,7 +15,14 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public void initialise(byte[] key) {
-        // Add your code here
+        // Step 1: generate temporary schedule keys (Tm and Tr)
+        CASTKeySet tempKeys = generateScheduleKeys(12, 4);
+
+        // Step 2: derive round keys from key and schedule
+        CASTKeySet roundKeys = generateRoundKeys(tempKeys, key, 12, 4);
+
+        // Step 3: store result in internal variable 'K'
+        this.K = roundKeys;
     }
 
     @Override
@@ -179,11 +186,74 @@ public class CAST384 extends CASTCipher {
     @Override
     public void hexad(int[] block, int[] Km, int[] Kr, int idx) {
         // Add your code here
+        int A = block[0];
+        int B = block[1];
+        int C = block[2];
+        int D = block[3];
+        int E = block[4];
+        int F = block[5];
+
+        int t1 = f1(F, Km[idx + 0], Kr[idx + 0]); // F1(F)
+        E ^= t1;
+
+        int t2 = f2(E, Km[idx + 1], Kr[idx + 1]); // F2(E')
+        D ^= t2;
+
+        int t3 = f3(D, Km[idx + 2], Kr[idx + 2]); // F3(D')
+        C ^= t3;
+
+        int t4 = f4(C, Km[idx + 3], Kr[idx + 3]); // F4(C')
+        B ^= t4;
+
+        int t5 = f5(B, Km[idx + 4], Kr[idx + 4]); // F5(B')
+        A ^= t5;
+
+        int t6 = f6(A, Km[idx + 5], Kr[idx + 5]); // F6(A')
+        F ^= t6;
+
+        block[0] = A;
+        block[1] = B;
+        block[2] = C;
+        block[3] = D;
+        block[4] = E;
+        block[5] = F;
     }
 
     @Override
     public void hexadInv(int[] block, int[] Km, int[] Kr, int idx) {
         // Add your code here
+        int A = block[0];
+        int B = block[1];
+        int C = block[2];
+        int D = block[3];
+        int E = block[4];
+        int F = block[5];
+
+        // Reverse order from Figure 5 (undo f6 to f1 in reverse)
+        int t6 = f6(A, Km[idx + 5], Kr[idx + 5]); // Undo f6 from forward
+        F ^= t6;
+
+        int t5 = f5(B, Km[idx + 4], Kr[idx + 4]);
+        A ^= t5;
+
+        int t4 = f4(C, Km[idx + 3], Kr[idx + 3]);
+        B ^= t4;
+
+        int t3 = f3(D, Km[idx + 2], Kr[idx + 2]);
+        C ^= t3;
+
+        int t2 = f2(E, Km[idx + 1], Kr[idx + 1]);
+        D ^= t2;
+
+        int t1 = f1(F, Km[idx + 0], Kr[idx + 0]);
+        E ^= t1;
+
+        block[0] = A;
+        block[1] = B;
+        block[2] = C;
+        block[3] = D;
+        block[4] = E;
+        block[5] = F;
     }
 
     @Override
