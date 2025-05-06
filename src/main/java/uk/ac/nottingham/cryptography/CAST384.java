@@ -259,11 +259,65 @@ public class CAST384 extends CASTCipher {
     @Override
     public void encrypt(byte[] data) {
         // Add your code here
+        int[] block = new int[6];
+        for (int i = 0; i < 6; i++) {
+            int index = i * 4;
+            block[i] = ((data[index] & 0xFF) << 24) |
+                    ((data[index + 1] & 0xFF) << 16) |
+                    ((data[index + 2] & 0xFF) << 8) |
+                    (data[index + 3] & 0xFF);
+        }
+
+        // First 6 forward hexads
+        for (int i = 0; i < 6; i++) {
+            hexad(block, K.getM(), K.getR(), i * 6);
+        }
+
+        // Final 6 inverse hexads
+        for (int i = 6; i < 12; i++) {
+            hexadInv(block, K.getM(), K.getR(), i * 6);
+        }
+
+        // Convert the 6 words back into the byte array
+        for (int i = 0; i < 6; i++) {
+            int index = i * 4;
+            data[index]     = (byte) (block[i] >>> 24);
+            data[index + 1] = (byte) (block[i] >>> 16);
+            data[index + 2] = (byte) (block[i] >>> 8);
+            data[index + 3] = (byte) (block[i]);
+        }
     }
 
     @Override
     public void decrypt(byte[] data) {
         // Add your code here
+        int[] block = new int[6];
+        for (int i = 0; i < 6; i++) {
+            int index = i * 4;
+            block[i] = ((data[index] & 0xFF) << 24) |
+                    ((data[index + 1] & 0xFF) << 16) |
+                    ((data[index + 2] & 0xFF) << 8) |
+                    (data[index + 3] & 0xFF);
+        }
+
+        // First 6 forward hexads (these undo the last 6 inverse hexads of encryption)
+        for (int i = 11; i >= 6; i--) {
+            hexad(block, K.getM(), K.getR(), i * 6);
+        }
+
+        // Final 6 inverse hexads (these undo the first 6 forward hexads of encryption)
+        for (int i = 5; i >= 0; i--) {
+            hexadInv(block, K.getM(), K.getR(), i * 6);
+        }
+
+        // Convert the 6 words back into the byte array
+        for (int i = 0; i < 6; i++) {
+            int index = i * 4;
+            data[index]     = (byte) (block[i] >>> 24);
+            data[index + 1] = (byte) (block[i] >>> 16);
+            data[index + 2] = (byte) (block[i] >>> 8);
+            data[index + 3] = (byte) (block[i]);
+        }
     }
 
 }
