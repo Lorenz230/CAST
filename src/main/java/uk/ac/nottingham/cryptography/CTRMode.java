@@ -21,17 +21,15 @@ public class CTRMode extends CipherMode {
 
     @Override
     public void initialise(Cipher cipher, byte[] key, byte[] nonce) {
-        // Add your code here
         this.cipher = cipher;
-        this.nonce = nonce.clone(); // defensive copy
+        this.nonce = nonce.clone();
         this.counter = 0;
-        this.keystreamIndex = 24; // start with empty keystream
+        this.keystreamIndex = 24;
         cipher.initialise(key);
     }
 
     @Override
     public void encrypt(byte[] data) {
-        // Add your code here
         for (int i = 0; i < data.length; i++) {
             if (keystreamIndex == 24) {
                 byte[] inputBlock = new byte[24];
@@ -53,14 +51,12 @@ public class CTRMode extends CipherMode {
 
     @Override
     public void decrypt(byte[] data) {
-        // Add your code here;
-        encrypt(data); // symmetric under XOR
+        encrypt(data);
     }
 
 
     @Override
     public void seek(byte[] counter) {
-        // Add your code here
         long value = 0;
         int padding = 8 - counter.length;
 
@@ -73,6 +69,6 @@ public class CTRMode extends CipherMode {
         }
 
         this.counter = value;
-        this.keystreamIndex = 24; // invalidate current keystream
+        this.keystreamIndex = 24;
     }
 }

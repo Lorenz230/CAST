@@ -15,20 +15,14 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public void initialise(byte[] key) {
-        // Step 1: generate temporary schedule keys (Tm and Tr)
         CASTKeySet tempKeys = generateScheduleKeys(12, 4);
-
-        // Step 2: derive round keys from key and schedule
         CASTKeySet roundKeys = generateRoundKeys(tempKeys, key, 12, 4);
-
-        // Step 3: store result in internal variable 'K'
         this.K = roundKeys;
     }
 
     @Override
     public CASTKeySet generateScheduleKeys(int roundCount, int dodecadCount) {
-        // Add your code here
-        int total = roundCount * dodecadCount; // total number of dodecads
+        int total = roundCount * dodecadCount;
         int[] Tm = new int[12 * total];
         int[] Tr = new int[12 * total];
 
@@ -41,7 +35,7 @@ public class CAST384 extends CASTCipher {
             for (int j = 0; j < 12; j++) {
                 int idx = i * 12 + j;
                 Tm[idx] = cm;
-                cm = cm + dm; // modulo 2^32 wrap-around is handled by Java automatically
+                cm = cm + dm;
                 Tr[idx] = cr % 32;
                 cr = cr + dr;
             }
@@ -52,7 +46,6 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public CASTKeySet generateRoundKeys(CASTKeySet T, byte[] key, int roundCount, int dodecadCount) {
-        // Add your code here
         int[] block = new int[12];
 
         for (int i = 0; i < 12; i++) {
@@ -81,19 +74,19 @@ public class CAST384 extends CASTCipher {
 
             int base = i * 6;
 
-            Km[base + 0] = block[11];       // L
-            Km[base + 1] = block[9];        // J
-            Km[base + 2] = block[7];        // H
-            Km[base + 3] = block[5];        // F
-            Km[base + 4] = block[3];        // D
-            Km[base + 5] = block[1];        // B
+            Km[base + 0] = block[11];
+            Km[base + 1] = block[9];
+            Km[base + 2] = block[7];
+            Km[base + 3] = block[5];
+            Km[base + 4] = block[3];
+            Km[base + 5] = block[1];
 
-            Kr[base + 0] = block[0] & 31;   // A % 32
-            Kr[base + 1] = block[2] & 31;   // C % 32
-            Kr[base + 2] = block[4] & 31;   // E % 32
-            Kr[base + 3] = block[6] & 31;   // G % 32
-            Kr[base + 4] = block[8] & 31;   // I % 32
-            Kr[base + 5] = block[10] & 31;  // K % 32
+            Kr[base + 0] = block[0] & 31;
+            Kr[base + 1] = block[2] & 31;
+            Kr[base + 2] = block[4] & 31;
+            Kr[base + 3] = block[6] & 31;
+            Kr[base + 4] = block[8] & 31;
+            Kr[base + 5] = block[10] & 31;
         }
 
         return new CASTKeySet(Km, Kr);
@@ -101,7 +94,6 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public int f1 (int d, int Km, int Kr) {
-        // Add your code here
         int I = Integer.rotateLeft(Km + d, Kr);
         int I1 = (I >>> 24) & 0xFF;
         int I2 = (I >>> 16) & 0xFF;
@@ -112,7 +104,6 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public int f2 (int d, int Km, int Kr) {
-        // Add your code here
         int I = Integer.rotateLeft(Km ^ d, Kr);
         int I1 = (I >>> 24) & 0xFF;
         int I2 = (I >>> 16) & 0xFF;
@@ -123,7 +114,6 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public int f3 (int d, int Km, int Kr) {
-        // Add your code here
         int I = Integer.rotateLeft(Km - d, Kr);
         int I1 = (I >>> 24) & 0xFF;
         int I2 = (I >>> 16) & 0xFF;
@@ -134,7 +124,6 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public int f4 (int d, int Km, int Kr) {
-        // Add your code here
         int I = Integer.rotateLeft(Km - d, Kr);
         int I1 = (I >>> 24) & 0xFF;
         int I2 = (I >>> 16) & 0xFF;
@@ -145,7 +134,6 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public int f5 (int d, int Km, int Kr) {
-        // Add your code here
         int I = Integer.rotateLeft(Km + d, Kr);
         int I1 = (I >>> 24) & 0xFF;
         int I2 = (I >>> 16) & 0xFF;
@@ -166,7 +154,6 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public void dodecad(int[] block, int[] Tm, int[] Tr, int idx) {
-        // Add your code here
         int base = idx;
 
         block[10] ^= f1(block[11], Tm[base + 0], Tr[base + 0]);
@@ -193,22 +180,22 @@ public class CAST384 extends CASTCipher {
         int E = block[4];
         int F = block[5];
 
-        int t1 = f1(F, Km[idx + 0], Kr[idx + 0]); // F1(F)
+        int t1 = f1(F, Km[idx + 0], Kr[idx + 0]);
         E ^= t1;
 
-        int t2 = f2(E, Km[idx + 1], Kr[idx + 1]); // F2(E')
+        int t2 = f2(E, Km[idx + 1], Kr[idx + 1]);
         D ^= t2;
 
-        int t3 = f3(D, Km[idx + 2], Kr[idx + 2]); // F3(D')
+        int t3 = f3(D, Km[idx + 2], Kr[idx + 2]);
         C ^= t3;
 
-        int t4 = f4(C, Km[idx + 3], Kr[idx + 3]); // F4(C')
+        int t4 = f4(C, Km[idx + 3], Kr[idx + 3]);
         B ^= t4;
 
-        int t5 = f5(B, Km[idx + 4], Kr[idx + 4]); // F5(B')
+        int t5 = f5(B, Km[idx + 4], Kr[idx + 4]);
         A ^= t5;
 
-        int t6 = f6(A, Km[idx + 5], Kr[idx + 5]); // F6(A')
+        int t6 = f6(A, Km[idx + 5], Kr[idx + 5]);
         F ^= t6;
 
         block[0] = A;
@@ -221,7 +208,6 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public void hexadInv(int[] block, int[] Km, int[] Kr, int idx) {
-        // Add your code here
         int A = block[0];
         int B = block[1];
         int C = block[2];
@@ -229,8 +215,7 @@ public class CAST384 extends CASTCipher {
         int E = block[4];
         int F = block[5];
 
-        // Reverse order from Figure 5 (undo f6 to f1 in reverse)
-        int t6 = f6(A, Km[idx + 5], Kr[idx + 5]); // Undo f6 from forward
+        int t6 = f6(A, Km[idx + 5], Kr[idx + 5]);
         F ^= t6;
 
         int t5 = f5(B, Km[idx + 4], Kr[idx + 4]);
@@ -268,17 +253,16 @@ public class CAST384 extends CASTCipher {
                     (data[index + 3] & 0xFF);
         }
 
-        // First 6 forward hexads
+
         for (int i = 0; i < 6; i++) {
             hexad(block, K.getM(), K.getR(), i * 6);
         }
 
-        // Final 6 inverse hexads
         for (int i = 6; i < 12; i++) {
             hexadInv(block, K.getM(), K.getR(), i * 6);
         }
 
-        // Convert the 6 words back into the byte array
+
         for (int i = 0; i < 6; i++) {
             int index = i * 4;
             data[index]     = (byte) (block[i] >>> 24);
@@ -290,7 +274,6 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public void decrypt(byte[] data) {
-        // Add your code here
         int[] block = new int[6];
         for (int i = 0; i < 6; i++) {
             int index = i * 4;
@@ -300,17 +283,14 @@ public class CAST384 extends CASTCipher {
                     (data[index + 3] & 0xFF);
         }
 
-        // First 6 forward hexads (these undo the last 6 inverse hexads of encryption)
         for (int i = 11; i >= 6; i--) {
             hexad(block, K.getM(), K.getR(), i * 6);
         }
 
-        // Final 6 inverse hexads (these undo the first 6 forward hexads of encryption)
         for (int i = 5; i >= 0; i--) {
             hexadInv(block, K.getM(), K.getR(), i * 6);
         }
 
-        // Convert the 6 words back into the byte array
         for (int i = 0; i < 6; i++) {
             int index = i * 4;
             data[index]     = (byte) (block[i] >>> 24);
