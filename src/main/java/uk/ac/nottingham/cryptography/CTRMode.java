@@ -21,10 +21,13 @@ public class CTRMode extends CipherMode {
 
     @Override
     public void initialise(Cipher cipher, byte[] key, byte[] nonce) {
+        // store cipher and nonce, reset counter ad keystream
         this.cipher = cipher;
         this.nonce = nonce.clone();
         this.counter = 0;
         this.keystreamIndex = 24;
+
+        // initialise block cipher with key
         cipher.initialise(key);
     }
 
@@ -32,12 +35,14 @@ public class CTRMode extends CipherMode {
     public void encrypt(byte[] data) {
         for (int i = 0; i < data.length; i++) {
             if (keystreamIndex == 24) {
-                byte[] inputBlock = new byte[24];
-                System.arraycopy(nonce, 0, inputBlock, 0, 16);
+                byte[] inputBlock = new byte[24]; // generate new block
+                System.arraycopy(nonce, 0, inputBlock, 0, 16); // copy nonce into first part of block
 
+                // append 8-byte counter
                 for (int j = 0; j < 8; j++) {
                     inputBlock[16 + j] = (byte) ((counter >>> (56 - 8 * j)) & 0xFF);
                 }
+
 
                 cipher.encrypt(inputBlock);
                 System.arraycopy(inputBlock, 0, keystream, 0, 24);
@@ -51,15 +56,16 @@ public class CTRMode extends CipherMode {
 
     @Override
     public void decrypt(byte[] data) {
-        encrypt(data);
+        encrypt(data); // same as enctryption
     }
 
 
     @Override
     public void seek(byte[] counter) {
-        long value = 0;
+        long value = 0; // set internal counter
         int padding = 8 - counter.length;
 
+        // pad zeros for shorter inputs
         for (int i = 0; i < padding; i++) {
             value <<= 8;
         }
