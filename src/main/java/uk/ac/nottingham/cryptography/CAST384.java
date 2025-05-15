@@ -19,8 +19,7 @@ public class CAST384 extends CASTCipher {
         CASTKeySet tempKeys = generateScheduleKeys(12, 4);
 
         // generate round keys
-        CASTKeySet roundKeys = generateRoundKeys(tempKeys, key, 12, 4);
-        this.K = roundKeys;
+        this.K = generateRoundKeys(tempKeys, key, 12, 4);
     }
 
     @Override
@@ -82,14 +81,14 @@ public class CAST384 extends CASTCipher {
             int base = i * 6;
 
             // get masking keys from transformed block
-            Km[base + 0] = block[11];
+            Km[base] = block[11];
             Km[base + 1] = block[9];
             Km[base + 2] = block[7];
             Km[base + 3] = block[5];
             Km[base + 4] = block[3];
             Km[base + 5] = block[1];
 
-            Kr[base + 0] = block[0] & 31;
+            Kr[base] = block[0] & 31;
             Kr[base + 1] = block[2] & 31;
             Kr[base + 2] = block[4] & 31;
             Kr[base + 3] = block[6] & 31;
@@ -178,7 +177,7 @@ public class CAST384 extends CASTCipher {
     @Override
     public void dodecad(int[] block, int[] Tm, int[] Tr, int idx) {
         // apply 12 chained F-functions on the 384-bit key block
-        block[10] ^= f1(block[11], Tm[idx + 0], Tr[idx + 0]);
+        block[10] ^= f1(block[11], Tm[idx], Tr[idx]);
         block[9]  ^= f2(block[10], Tm[idx + 1], Tr[idx + 1]);
         block[8]  ^= f3(block[9],  Tm[idx + 2], Tr[idx + 2]);
         block[7]  ^= f4(block[8],  Tm[idx + 3], Tr[idx + 3]);
@@ -203,7 +202,7 @@ public class CAST384 extends CASTCipher {
         int E = block[4];
         int F = block[5];
 
-        int t1 = f1(F, Km[idx + 0], Kr[idx + 0]);
+        int t1 = f1(F, Km[idx], Kr[idx]);
         E ^= t1; // F1(F) -> E
 
         int t2 = f2(E, Km[idx + 1], Kr[idx + 1]);
@@ -255,7 +254,7 @@ public class CAST384 extends CASTCipher {
         int t2 = f2(E, Km[idx + 1], Kr[idx + 1]);
         D ^= t2;
 
-        int t1 = f1(F, Km[idx + 0], Kr[idx + 0]);
+        int t1 = f1(F, Km[idx], Kr[idx]);
         E ^= t1;
 
         // store updates values back into the block
