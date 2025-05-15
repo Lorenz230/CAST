@@ -17,52 +17,51 @@ public class CAST384 extends CASTCipher {
     public void initialise(byte[] key) {
         // generate temporary schedule constants
         CASTKeySet tempKeys = generateScheduleKeys(12, 4);
-
         // generate round keys
         this.K = generateRoundKeys(tempKeys, key, 12, 4);
     }
 
     @Override
     public CASTKeySet generateScheduleKeys(int roundCount, int dodecadCount) {
-        int total = roundCount * dodecadCount;
-        int[] Tm = new int[12 * total]; // masking key constants
-        int[] Tr = new int[12 * total]; // rotation key constants
+        int totalIterations = roundCount * dodecadCount;
+        int[] TempMaskKeys = new int[12 * totalIterations]; // masking key constants
+        int[] tempRotationKeys = new int[12 * totalIterations]; // rotation key constants
 
-        int cm = 0x5A827999;
-        int dm = 0x6ED9EBA1;
-        int cr = 19;
-        int dr = 17;
+        int maskConstant = 0x5A827999;
+        int maskDelta = 0x6ED9EBA1;
+        int rotationConstant = 19;
+        int rotationDelta = 17;
 
-        for (int i = 0; i < total; i++) {
+        for (int i = 0; i < totalIterations; i++) {
             for (int j = 0; j < 12; j++) {
                 int idx = i * 12 + j;
-                Tm[idx] = cm;
-                cm = cm + dm;
-                Tr[idx] = cr % 32;
-                cr = cr + dr;
+                TempMaskKeys[idx] = maskConstant;
+                maskConstant = maskConstant + maskDelta;
+                tempRotationKeys[idx] = rotationConstant % 32;
+                rotationConstant = rotationConstant + rotationDelta;
             }
         }
 
-        return new CASTKeySet(Tm, Tr);
+        return new CASTKeySet(TempMaskKeys, tempRotationKeys);
     }
 
     @Override
     public CASTKeySet generateRoundKeys(CASTKeySet T, byte[] key, int roundCount, int dodecadCount) {
-        int[] block = new int[12];
+        int[] keyBlockWords = new int[12];
 
         // convert the key bytes into 32 bit words
-        for (int i = 0; i < 12; i++) {
-            int offset = i * 4;
+        for (int wordIndex = 0; wordIndex < 12; wordIndex++) {
+            int offset = wordIndex * 4;
 
             if (offset + 3 < key.length) {
-                int b0 = key[offset]     & 0xFF;
-                int b1 = key[offset + 1] & 0xFF;
-                int b2 = key[offset + 2] & 0xFF;
-                int b3 = key[offset + 3] & 0xFF;
+                int byte0 = key[offset]     & 0xFF;
+                int byte1 = key[offset + 1] & 0xFF;
+                int byte2 = key[offset + 2] & 0xFF;
+                int byte3 = key[offset + 3] & 0xFF;
 
-                block[i] = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
+                keyBlockWords[wordIndex] = (byte0 << 24) | (byte1 << 16) | (byte2 << 8) | byte3;
             } else {
-                block[i] = 0;
+                keyBlockWords[wordIndex] = 0;
             }
         }
 
@@ -75,28 +74,28 @@ public class CAST384 extends CASTCipher {
 
 
         // apply dodecad function multiple times
-        for (int i = 0; i < roundCount; i++) {
-            for (int d = 0; d < dodecadCount; d++) {
-                int idx = (i * dodecadCount + d) * 12;
-                dodecad(block, Tm, Tr, idx);
+        for (int roundIndex = 0; roundIndex < roundCount; roundIndex++) {
+            for (int dodecadIndex = 0; dodecadIndex < dodecadCount; dodecadIndex++) {
+                int dodecadOfsset = (roundIndex * dodecadCount + dodecadIndex) * 12;
+                dodecad(keyBlockWords, Tm, Tr, dodecadOfsset);
             }
 
-            int base = i * 6;
+            int base = roundIndex * 6;
 
-            // get masking keys from transformed block
-            Km[base] = block[11];
-            Km[base + 1] = block[9];
-            Km[base + 2] = block[7];
-            Km[base + 3] = block[5];
-            Km[base + 4] = block[3];
-            Km[base + 5] = block[1];
+            // get masking keys from transformed keyBlockWords
+            Km[base] = keyBlockWords[11];
+            Km[base + 1] = keyBlockWords[9];
+            Km[base + 2] = keyBlockWords[7];
+            Km[base + 3] = keyBlockWords[5];
+            Km[base + 4] = keyBlockWords[3];
+            Km[base + 5] = keyBlockWords[1];
 
-            Kr[base] = block[0] & 31;
-            Kr[base + 1] = block[2] & 31;
-            Kr[base + 2] = block[4] & 31;
-            Kr[base + 3] = block[6] & 31;
-            Kr[base + 4] = block[8] & 31;
-            Kr[base + 5] = block[10] & 31;
+            Kr[base] = keyBlockWords[0] & 31;
+            Kr[base + 1] = keyBlockWords[2] & 31;
+            Kr[base + 2] = keyBlockWords[4] & 31;
+            Kr[base + 3] = keyBlockWords[6] & 31;
+            Kr[base + 4] = keyBlockWords[8] & 31;
+            Kr[base + 5] = keyBlockWords[10] & 31;
         }
 
         return new CASTKeySet(Km, Kr);
@@ -105,76 +104,76 @@ public class CAST384 extends CASTCipher {
     @Override
     public int f1 (int d, int Km, int Kr) {
         // mask input with km and rotate left by kr bits
-        int I = Integer.rotateLeft(Km + d, Kr);
+        int rotatedInput = Integer.rotateLeft(Km + d, Kr);
 
-        // split I into four bytes
-        int I1 = (I >>> 24) & 0xFF;
-        int I2 = (I >>> 16) & 0xFF;
-        int I3 = (I >>> 8) & 0xFF;
-        int I4 = I & 0xFF;
+        // split rotatedInput into four bytes
+        int byte1 = (rotatedInput >>> 24) & 0xFF;
+        int byte2 = (rotatedInput >>> 16) & 0xFF;
+        int byte3 = (rotatedInput >>> 8) & 0xFF;
+        int byte4 = rotatedInput & 0xFF;
 
         // combine outputs using F1 operation order
-        return ((S1[I1] ^ S2[I2]) - S3[I3]) + S4[I4];
+        return ((S1[byte1] ^ S2[byte2]) - S3[byte3]) + S4[byte4];
     }
 
     @Override
     public int f2 (int d, int Km, int Kr) {
-        int I = Integer.rotateLeft(Km ^ d, Kr);
-        int I1 = (I >>> 24) & 0xFF;
-        int I2 = (I >>> 16) & 0xFF;
-        int I3 = (I >>> 8) & 0xFF;
-        int I4 = I & 0xFF;
+        int rotatedInput = Integer.rotateLeft(Km ^ d, Kr);
+        int byte1 = (rotatedInput >>> 24) & 0xFF;
+        int byte2 = (rotatedInput >>> 16) & 0xFF;
+        int byte3 = (rotatedInput >>> 8) & 0xFF;
+        int byte4 = rotatedInput & 0xFF;
 
         // combine outputs using the F2 operation order
-        return ((S1[I1] - S2[I2]) + S3[I3]) ^ S4[I4];
+        return ((S1[byte1] - S2[byte2]) + S3[byte3]) ^ S4[byte4];
     }
 
     @Override
     public int f3 (int d, int Km, int Kr) {
-        int I = Integer.rotateLeft(Km - d, Kr);
-        int I1 = (I >>> 24) & 0xFF;
-        int I2 = (I >>> 16) & 0xFF;
-        int I3 = (I >>> 8) & 0xFF;
-        int I4 = I & 0xFF;
+        int rotatedInput = Integer.rotateLeft(Km - d, Kr);
+        int byte1 = (rotatedInput >>> 24) & 0xFF;
+        int byte2 = (rotatedInput >>> 16) & 0xFF;
+        int byte3 = (rotatedInput >>> 8) & 0xFF;
+        int byte4 = rotatedInput & 0xFF;
 
         // combine outputs using the F3 operation order
-        return ((S1[I1] + S2[I2]) ^ S3[I3]) - S4[I4];
+        return ((S1[byte1] + S2[byte2]) ^ S3[byte3]) - S4[byte4];
     }
 
     @Override
     public int f4 (int d, int Km, int Kr) {
-        int I = Integer.rotateLeft(Km - d, Kr);
-        int I1 = (I >>> 24) & 0xFF;
-        int I2 = (I >>> 16) & 0xFF;
-        int I3 = (I >>> 8) & 0xFF;
-        int I4 = I & 0xFF;
+        int rotatedInput = Integer.rotateLeft(Km - d, Kr);
+        int byte1 = (rotatedInput >>> 24) & 0xFF;
+        int byte2 = (rotatedInput >>> 16) & 0xFF;
+        int byte3 = (rotatedInput >>> 8) & 0xFF;
+        int byte4 = rotatedInput & 0xFF;
 
         // combine outputs using F4 operation order
-        return ((S1[I1] ^ S2[I2]) + S3[I3]) - S4[I4];
+        return ((S1[byte1] ^ S2[byte2]) + S3[byte3]) - S4[byte4];
     }
 
     @Override
     public int f5 (int d, int Km, int Kr) {
-        int I = Integer.rotateLeft(Km + d, Kr);
-        int I1 = (I >>> 24) & 0xFF;
-        int I2 = (I >>> 16) & 0xFF;
-        int I3 = (I >>> 8) & 0xFF;
-        int I4 = I & 0xFF;
+        int rotatedInput = Integer.rotateLeft(Km + d, Kr);
+        int byte1 = (rotatedInput >>> 24) & 0xFF;
+        int byte2 = (rotatedInput >>> 16) & 0xFF;
+        int byte3 = (rotatedInput >>> 8) & 0xFF;
+        int byte4 = rotatedInput & 0xFF;
 
         // combine outputs usign F5 operation order
-        return ((S1[I1] - S2[I2]) ^ S3[I3]) + S4[I4];
+        return ((S1[byte1] - S2[byte2]) ^ S3[byte3]) + S4[byte4];
     }
 
     @Override
     public int f6 (int d, int Km, int Kr) {
-        int I = Integer.rotateLeft(Km ^ d, Kr);
-        int I1 = (I >>> 24) & 0xFF;
-        int I2 = (I >>> 16) & 0xFF;
-        int I3 = (I >>> 8) & 0xFF;
-        int I4 = I & 0xFF;
+        int rotatedInput = Integer.rotateLeft(Km ^ d, Kr);
+        int byte1 = (rotatedInput >>> 24) & 0xFF;
+        int byte2 = (rotatedInput >>> 16) & 0xFF;
+        int byte3 = (rotatedInput >>> 8) & 0xFF;
+        int byte4 = rotatedInput & 0xFF;
 
         // combine output using F6 operation order
-        return ((S1[I1] + S2[I2]) - S3[I3]) ^ S4[I4];
+        return ((S1[byte1] + S2[byte2]) - S3[byte3]) ^ S4[byte4];
     }
 
     @Override
