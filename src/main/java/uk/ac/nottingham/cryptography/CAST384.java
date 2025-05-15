@@ -52,12 +52,15 @@ public class CAST384 extends CASTCipher {
 
         // convert the key bytes into 32 bit words
         for (int i = 0; i < 12; i++) {
-            int index = i * 4;
-            if (index + 3 < key.length) {
-                block[i] = ((key[index] & 0xFF) << 24)
-                        | ((key[index + 1] & 0xFF) << 16)
-                        | ((key[index + 2] & 0xFF) << 8)
-                        | (key[index + 3] & 0xFF);
+            int offset = i * 4;
+
+            if (offset + 3 < key.length) {
+                int b0 = key[offset]     & 0xFF;
+                int b1 = key[offset + 1] & 0xFF;
+                int b2 = key[offset + 2] & 0xFF;
+                int b3 = key[offset + 3] & 0xFF;
+
+                block[i] = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
             } else {
                 block[i] = 0;
             }
@@ -271,10 +274,13 @@ public class CAST384 extends CASTCipher {
         int[] block = new int[6];
         for (int i = 0; i < 6; i++) {
             int index = i * 4;
-            block[i] = ((data[index] & 0xFF) << 24) |
-                    ((data[index + 1] & 0xFF) << 16) |
-                    ((data[index + 2] & 0xFF) << 8) |
-                    (data[index + 3] & 0xFF);
+
+            int b0 = data[index]     & 0xFF;
+            int b1 = data[index + 1] & 0xFF;
+            int b2 = data[index + 2] & 0xFF;
+            int b3 = data[index + 3] & 0xFF;
+
+            block[i] = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
         }
 
         // apply 6 forward hexad rounds
@@ -302,10 +308,13 @@ public class CAST384 extends CASTCipher {
         int[] block = new int[6];
         for (int i = 0; i < 6; i++) {
             int index = i * 4;
-            block[i] = ((data[index] & 0xFF) << 24) |
-                    ((data[index + 1] & 0xFF) << 16) |
-                    ((data[index + 2] & 0xFF) << 8) |
-                    (data[index + 3] & 0xFF);
+
+            int b0 = data[index]     & 0xFF;
+            int b1 = data[index + 1] & 0xFF;
+            int b2 = data[index + 2] & 0xFF;
+            int b3 = data[index + 3] & 0xFF;
+
+            block[i] = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
         }
 
         // apply 6 forward hexad rounds in reverse
