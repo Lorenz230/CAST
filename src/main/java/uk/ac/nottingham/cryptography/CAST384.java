@@ -15,7 +15,10 @@ public class CAST384 extends CASTCipher {
 
     @Override
     public void initialise(byte[] key) {
+        // generate temporary schedule constants
         CASTKeySet tempKeys = generateScheduleKeys(12, 4);
+
+        // generate round keys
         CASTKeySet roundKeys = generateRoundKeys(tempKeys, key, 12, 4);
         this.K = roundKeys;
     }
@@ -23,8 +26,8 @@ public class CAST384 extends CASTCipher {
     @Override
     public CASTKeySet generateScheduleKeys(int roundCount, int dodecadCount) {
         int total = roundCount * dodecadCount;
-        int[] Tm = new int[12 * total];
-        int[] Tr = new int[12 * total];
+        int[] Tm = new int[12 * total]; // masking key constants
+        int[] Tr = new int[12 * total]; // rotation key constants
 
         int cm = 0x5A827999;
         int dm = 0x6ED9EBA1;
@@ -48,6 +51,7 @@ public class CAST384 extends CASTCipher {
     public CASTKeySet generateRoundKeys(CASTKeySet T, byte[] key, int roundCount, int dodecadCount) {
         int[] block = new int[12];
 
+        // convert the key bytes into 32 bit words
         for (int i = 0; i < 12; i++) {
             int index = i * 4;
             if (index + 3 < key.length) {
@@ -60,12 +64,15 @@ public class CAST384 extends CASTCipher {
             }
         }
 
+        // retrieve arrays of temporary masking and rotation constants
         int[] Tm = T.getM();
         int[] Tr = T.getR();
 
         int[] Km = new int[roundCount * 6];
         int[] Kr = new int[roundCount * 6];
 
+
+        // apply dodecad function multiple times
         for (int i = 0; i < roundCount; i++) {
             for (int d = 0; d < dodecadCount; d++) {
                 int idx = (i * dodecadCount + d) * 12;
@@ -74,6 +81,7 @@ public class CAST384 extends CASTCipher {
 
             int base = i * 6;
 
+            // get masking keys from transformed block
             Km[base + 0] = block[11];
             Km[base + 1] = block[9];
             Km[base + 2] = block[7];
